@@ -1,0 +1,959 @@
+---
+title: "Classifying Diabetes Cases in a Health Dataset"
+author: 
+         - "Saheli Datta"
+         - "Saikat Datta"
+         - "Subhajit Karmakar"
+
+date: "24.07.2023"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    css: xaringan-themer.css
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,message=F,warning = F)
+
+```
+
+```{r xaringan-themer, include=FALSE, warning=FALSE}
+library(xaringanthemer)
+style_mono_accent(
+  base_color = "#000033",
+  header_font_google = google_font("Josefin Sans"),
+  text_font_google   = google_font("Montserrat", "300", "300i"),
+  code_font_google   = google_font("Fira Mono"),
+  table_row_even_background_color='#ccccff',
+)
+
+```
+# INTRODUCTION :
+
+Diabetes is among the most prevalent chronic diseases in the United States, impacting millions of Americans each year and exerting a significant financial burden on the economy. Diabetes is a serious chronic disease in which individuals lose the ability to effectively regulate levels of glucose in the blood, and can lead to reduced quality of life and life expectancy. Complications like heart disease, vision loss, lower-limb amputation, and kidney disease are associated with chronically high levels of sugar remaining in the bloodstream for those with diabetes.  In this project, we aim to develop a predictive model to assess the risk of diabetes based on comprehensive patient data.
+
+- **Motivation:** Enhancing early diagnosis and personalized treatment plans, the classification of diabetes patients can provide valuable insights, empowering healthcare and public health efforts for better outcomes.
+
+---
+```{css}
+.red {
+  color: #ff3300;
+  font-size: 25px;
+  font-weight: bolder;
+}
+```
+# DESCRIPTION OF THE DATA
+
+.red[The Behavioral Risk Factor Surveillance System (BRFSS)] is a health-related telephone survey that is collected annually by the CDC. Each year, it collects responses from 400,000+ Americans on health-related risk behaviors, chronic health conditions, and the use of preventative services.  
+
+For this project, a csv of the .font[[dataset](https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset)], available on Kaggle for the year 2015 was used. It .red[contains responses from 253,680 individuals and has 22 features.] These features are either questions directly asked of participants, or calculated variables based on individual participant responses. 
+
+---
+#### A brief description of the features is given below - 
+
+- **Diabetes_012**: Whether an individual is diagnosed with diabetes or not. 0 indicates no presence of diabetes, 1 indicates symptoms of prediabetes and 2 denotes diabetic patient.
+
+- **HighBP**: Indicates the blood pressure status of an individual. 1 denotes high BP and 0 denotes no high BP for an individual.
+
+- **HighChol**: Indicates presence of high cholesterol level. 0 is for no high cholesterol and 1 indicates otherwise.
+
+- **CholCheck**: Cholesterol check in last 5 years. 0 is for 'No' and 1 is for 'Yes'.
+
+
+- **BMI**: This column contains Body Mass Index of the individuals.
+
+- **Smoker**: Indicates whether a person has smoked at least 100 cigarettes in his/her entire life. 0 = 'No' and 1 = 'Yes'.
+
+- **Stroke**: Indicates if a person has ever had a stroke. 0 = 'No' and 1 = 'Yes'.
+
+- **HeartDiseaseorAttack**: Indicates if a person has ever experienced coronary heart disease (CHD) or myocardial infarction (MI). 0 = 'No' and 1 = 'Yes'.
+
+- **PhysActivity**: Engagement in physical activities ( not including job ). 0 = 'No' and 1 = 'Yes'.
+
+- **Fruits**: Consumption of fruit 1 or more times per day. 0 = 'No' and 1 = 'Yes'.
+
+- **Veggies**: Consuption of vegetables 1 or more times per day. 0 = 'No' and 1 = 'Yes'.
+
+- **HvyAlcoholConsump**: Indicates whether an individual is a heavy drinker ( adult men having more than 14 drinks per week and adult women having more than 7 drinks per week ) or not. 0 = 'No' and 1 = 'Yes'.
+---
+  
+- **AnyHealthcare**: Indicates if a person has any kind of health care coverage, including health insurance, prepaid plans such as HMO, etc. 0 = 'No' and 1 = 'Yes'.
+  
+- **NoDocbcCost**: Indicates if there was a time in the past 12 months when a person needed to see a doctor but could not because of cost. 0 = 'No' and 1 = 'Yes'.
+  
+- **GenHlth**: The general health of a person on a scale of 1 - 5. Here, 1 = 'excellent' 2 = 'very good' 3 = 'good' 4 = 'fair' 5 = 'poor'
+  
+- **MentHlth***: "Now thinking about your mental health, which includes stress, depression, and problems with emotions, for how many days during the past 30" 
+  
+- **PhysHlth*****: "Now thinking about your physical health, which includes physical illness and injury, for how many days during the past 30" 
+  
+- **DiffWalk**: Indicates whether a person has serious difficulty in walking or climbing stairs. 0 = 'No' and 1 = 'Yes'.
+  
+- **Sex**: 0 indicates 'Female' and 1 indicates 'Male' 
+  
+---
+    
+- **Age**: The age of the individuals are categorized in 13 levels. 1 = 18-24, 9 = 60-64, 13 = 80 or older.
+    
+- **Education**: Education level of an individual on a scale of 1 - 6. 1 = Never attended school or only kindergarten, 2 = Grades 1, through 8
+    
+- **Income**: Income of the individuals on a scale of 1 - 8. 1 = less than 10,000 USD, 5 = less than 35,000 USD, 8 = 75,000 USD or more.
+    
+.font[It is evident that the feature 'BMI' is a continuous variable.] Whereas, the rest of the variables are of categorical type consisting of two or more levels.
+    
+\* , \*\* These columns indicate the number of days in the last 30 days but the exact action taken by the individuals during this period in regard to their mental and physical health is unclear.
+    
+---
+```{css}
+.font{
+
+font-size: 20px;
+font-weight: bold;
+}
+```
+# OBJECTIVE 
+      
+- .font[The primary objective of this project is to develop a robust model that accurately predicts the risk of diabetes type 2 based on the given dataset.] 
+
+- .font[Also to find out the the primary factors contributing to diabetes.]
+
+For this purpose we take 'Diabetes_012' as our response and rest of the features as predictors.]
+
+---
+      
+# METHODOLOGY
+      
+#### Models Used for Classification :
+    
+- **Generalized Linear Model (GLM):**
+      
+A generalized linear model (GLM) is a linear regression model extended to handle non-normally distributed response variables and to accommodate different error distributions. The GLM allows us to choose a suitable error distribution, such as Gaussian (normal), binomial, Poisson, etc., depending on the nature of the response variable and the data.
+The Generalized Linear Model (GLM) can be expressed as:
+      
+$$ Y = g(\mu) + \varepsilon $$
+      
+where,
+    
+    $Y$ is the response variable (dependent variable)
+    
+    $\mu$ is the mean response given the predictor variables
+    
+---
+      
+$g(\mu)$ is the link function that models the relationship between the predictors and the mean response
+    
+$\varepsilon$ represents the error term following a specific distribution.
+    
+- **Decision Tree:**
+      
+A decision tree is a tree-like model that recursively splits the data based on features to make sequential decisions, resulting in a series of if-else conditions for classification or regression tasks. It works by recursively partitioning the data based on features, choosing the splits that maximize information gain (for classification) or reduce mean squared error (for regression). The final model uses the paths from root to leaf nodes to assign class labels (for classification) or predict continuous values (for regression).
+    
+Here for classification we use Decreased Gini's Index as Information Gain. The expression for Gini's Index is as follows:
+      
+$$\text{Gini Index} = 1 - \sum_{i=1}^{K} (p_i)^2$$
+---
+      
+where,
+    
+- $K$ is the number of classes or categories.
+- $p_i$ is the proportion of samples belonging to class $i$ in a node.
+    
+- **Random Forest:**
+      
+Random Forest is an ensemble learning method that combines multiple decision trees to make predictions. It works by building multiple decision trees using bootstrapped samples of the training data and random feature subsets, and then aggregating their predictions through voting (for classification) or averaging (for regression) to improve generalization and reduce overfitting.
+    
+    
+- **K-Nearest Neighbor**
+      
+K-nearest neighbors (KNN) is a non-parametric and instance-based supervised learning algorithm that predicts the class of a data point by considering the majority class of its k-nearest neighbors in the feature space. The distance measure commonly used to determine the similarity between data points is the Euclidean distance, Hamming distance.
+---
+
+#### Metrics Used for Model Evaluation and Model Selection :
+
+
+- **Accuracy** :  
+      
+It measures the proportion of correct predictions (both true positives and true negatives) made by the model out of the total number of predictions.
+    
+$$Accuracy = \frac{TP + TN}{TP + TN + FP + FN}$$
+      
+- **Precision** : 
+      
+Precision is a metric commonly used in binary classification tasks to evaluate the accuracy of the positive predictions made by the model. It measures the proportion of true positive predictions (correctly predicted positive instances) out of the total instances that the model has predicted as positive.
+    
+$$Precision = \frac{TP}{TP + FP}$$
+      
+---
+      
+- **Recall** : 
+      
+It is another important metric used in binary classification tasks to evaluate the model's ability to correctly identify positive instances. It measures the proportion of true positive predictions (correctly predicted positive instances) out of the total actual positive instances in the dataset. It is also known as sensitivity or true positive rate.
+
+$$Recall = \frac{TP}{TP + FN}$$
+
+- **F1 score** : 
+
+The F1 score is a metric commonly used in binary classification tasks to balance the trade-off between precision and recall. It is the harmonic mean of precision and recall, providing a single value that combines both metrics into a single performance measure.
+
+$$F1 Score = \frac{2 \cdot \text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}$$
+
+---
+
+# Exploratory Data Analysis
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyverse)
+library(scales)
+library(ROSE)
+library(cutpointr)
+library(ROCR)
+library(glue)
+library(rpart)
+library(rpart.plot)
+library(vip)
+library(randomForest)
+library(caret)
+library(class)
+library(knitr)
+library(gridExtra)
+#library(Metrics)
+set.seed(seed=123)
+# remotes::install_github("cran/DMwR")
+
+
+df_raw <- read_csv("C:\\Users\\Saheli\\Desktop\\self project\\diabetes health ind.csv")
+nm <- names(df_raw) 
+catnm <- nm[nm != 'BMI']
+df_raw %>% mutate_at(catnm, as.factor) -> df1
+
+```
+
+#### Checking for missing values:
+
+Our first step of EDA is to check if there are any missing values present in the data. .red[The count of missing values is found to be 0.] Which shows that there is no missing values present in our dataset.
+
+`# Checking for NA value:
+df_raw %>% is.na() %>% sum()`
+
+```{r cho=TRUE}
+# Checking for NA value:
+df_raw %>% is.na() %>% sum()
+```
+---
+  
+# Target Variable:
+  
+We have chosen "Diabetes_012" as our target variable. A frequency distribution of the individuals with respect to their diabetic status is shown in the next page
+
+```{r, fig.align='center',fig.width=5,fig.height=5}
+df1 %>% count(Diabetes_012) %>% 
+  ggplot(aes(x = Diabetes_012, y = n/sum(n))) +
+  geom_bar(stat = 'identity', width = 0.3,
+           colour = 'black', fill = 'yellow') +
+  labs(title = 'Frequency distribution of the Target variable (before modification)',
+       x = 'Diabetes status', y = 'Density')
+```
+
+---
+  
+Note that, .font[the number of people with "prediabetes" (i.e. those who corresponding to the level '1') is very low.] This imbalance might significantly hinder our task of model building. Also, since our objective is to predict if a person has diabetes type 2 or not so, we completely omit the rows related to prediabetic individuals from our data and we change the level for diabetic patients to "1".
+
+```{r,echo=FALSE}
+df <- df_raw %>%
+  filter(df_raw$Diabetes_012 != 1)
+df$Diabetes_012[df$Diabetes_012 == 2] <- 1
+df %>% mutate_at(catnm, as.factor) -> df
+
+```
+
+---
+  
+Now, the Frequency distribution of persons as per their diabetes status is shown below:
+
+```{r}
+df %>% count(Diabetes_012) %>% 
+  ggplot(aes(x = Diabetes_012, y = n/sum(n))) +
+  geom_bar(stat = 'identity', width = 0.3,
+           colour = 'black', fill = 'yellow') +
+  labs(title = 'Frequency distribution of the Target variable (after modification)',
+       x = 'Diabetes status', y = 'Density')
+```
+
+---
+  
+# Predictor Variables :
+  
+  As previously mentioned, we have 21 predictors among which all except "BMI" are categorical variables.
+
+To understand the distribution of each categorical variable, we represent them by bar plot as follows:
+---
+```{r,fig.align='center'}
+# Plots of categorical variables:
+catnm2 <- catnm[catnm != "Diabetes_012"]
+par(mar = c(rep(2.5,4)))
+par(mfrow = c(4,5))
+for(i in catnm2){
+  table(df[i]) %>% plot(main = paste(i),
+                        xlab = '', ylab = '',
+                        col = 'red')
+}
+```
+
+---
+**Observations:**
+
+- .font[We can observe that there are more or less same number of smokers and non smokers present in the data.]
+
+- .font[Whereas, the number of individuals who have not experienced stroke is very high with respect to those who have already had stroke.]
+
+- .font[The people who has high income are more in count than the people who has lesser income]
+
+- .font[The respective count of Mental Health Groups and Physical Health groups are almost similar. That may indicate that they can be related.]
+
+- .font[The male and female ration is not 1:1 in the dataset. There are more male individuals than females.]
+
+
+.font[These observations also indicates the dataset is not uniform in nature. It is imbalanced.]
+
+
+
+---
+#### Violin Plot of BMI vs Sex:
+```{r,fig.align='center',fig.width=5,fig.height=5}
+# BMI ~ Categorical(particular)
+catnm3 <- c('Sex', 'Age', 'Smoker', 'Stroke', 'HighChol',
+            'HighBP', 'Veggies', 'Fruits', 'MentHlth', 'PhysHlth')
+f2 <- function(var){       # violin plot
+  df %>% ggplot(aes(x = {{var}}, y = BMI)) +
+    geom_violin(draw_quantiles = c(0.25,0.5,0.75),
+                fill = 'red', alpha = 0.4,
+                linewidth = 1) +
+    scale_y_continuous(n.breaks = 10) + theme_bw()
+}
+
+attach(df)
+f2(Sex)
+
+```
+
+#### Interpretation:
+
+-.font[We see that the BMI does not vary much with the fact that whether a person is Male or Female. In both cases the value of the median of BMI is around 36.]
+
+-.font[Also it can be noted that for Females there are some outliers in BMI.]
+  
+---
+#### Violin Plot of BMI vs High Cholestrol:
+```{r,fig.align='center',fig.width=5,fig.height=5}
+f2(HighChol)
+detach(df)
+```
+
+#### Interpretation:
+
+- .font[We see that the BMI does not vary much with the fact that whether a person has High Cholestrol or not. In both cases the value of the median of BMI is around 36.]
+
+- .font[Also it can be noted that for High Cholestorel people there are some outliers in BMI.]
+---
+
+#### The boxplot of "BMI" is shown below:
+  
+```{r,,fig.align='center',fig.width=5,fig.height=5}
+ggplot(data = df,aes(y=BMI))+
+  stat_boxplot(geom = "errorbar")+
+  geom_boxplot(color='black',fill='4')+
+  theme(panel.background = element_rect(fill='azure2'))+
+  labs(title = 'Boxplot of BMI')+
+  theme(plot.title = element_text(hjust=0.5))
+```
+ **Observation:**
+The boxplot shows that there are some outliers present in the data with respect to "BMI". In fact, the proportion of outliers in this data is obtained to be 0.038.
+```{r}
+out <- boxplot(df$BMI, plot = F)$out
+df_out <- df %>% filter((df$BMI %in% out))
+```
+
+---
+  
+Now, a barplot of the response in the data which contains only outliers of "BMI" is shown here:
+  
+```{r}
+#Barplot of Diabetes in outlier set
+df_out %>% count(Diabetes_012) %>% 
+  ggplot(aes(x = Diabetes_012, y = n/sum(n))) +
+  geom_bar(stat = 'identity', width = 0.3,
+           colour = 'black', fill = 'yellow') +
+  labs(title = 'Frequency distribution of the Target variable in outlying data (w.r.t "BMI")',
+       x = 'Diabetes status', y = 'Density')
+```
+
+---
+**Observation:** 
+
+.font[We can see that approximately one third of these individuals have diabetes which is a very high proportion compared to the overall proportion of diabetic individuals]. So, if we omit these outliers from data then that will result in a loss of relatively high proportion of diabetic patients and a low proportion of non diabetic individuals. Hence, .font[we will keep these outliers in our data and continue the analysis.]  
+
+---
+  
+# Some Further Observations:
+  
+```{r}
+f3 <- function(var1, var2, option){
+  
+  if(option == 'prop'){
+    df %>% group_by({{var1}}, {{var2}}) %>% 
+      count() %>% group_by({{var1}}) %>%
+      mutate(percentage = n/sum(n)) %>% 
+      ggplot(aes(x = {{var1}}, y = percentage, fill = {{var2}})) +
+      geom_bar(stat = 'identity', position = position_dodge2()) +
+      scale_y_continuous(labels = percent) +
+      theme_light()
+  }else if(option == 'count'){
+    df %>% group_by({{var1}}, {{var2}}) %>% 
+      count() %>% ggplot(aes(x = {{var1}}, 
+                             y = n, fill = {{var2}})) +
+      geom_bar(stat = 'identity', position = position_dodge2()) +
+      scale_y_continuous(n.breaks = 10) + theme_light()
+  }
+}
+```
+
+**Here is a barplot of "Income" where each income levels are grouped by "GenHlth":**
+
+```{r}
+attach(df)
+f3(Income, GenHlth, option = 'prop')
+```
+
+---
+
+**Observation:**
+
+It is readily visible that the proportion of "excellent" and "very good" general health conditions increases as the income level of the group of individuals increases and also the proportion of people with "fair" and "poor" health increases as income level decreases. Also, throughout all income levels the proportion of people with "good" health remains almost same.
+
+.font[This observation suggests that an individual belonging to a higher income class is more likely to have a good overall health condition compared to an individual who belongs to a relatively lower income class.]
+
+---
+  
+**Barplot of "Smoker" where the levels are grouped by "HeartDiseaseorAttack":**
+
+```{r,fig.align='center',fig.width=5,fig.height=5}
+f3(Smoker, HeartDiseaseorAttack, option = 'prop')
+```
+**Observation:**
+
+The proportion of people who have experienced CHD or MI is more in the group of smokers. Therefore, .font[smokers are more likely to have experienced heart disorder(s) compared to non smokers.]
+
+---
+
+**To see the association between the target variable and the features-**
+
+The following table shows the values of Chi squared statistic along with p-values for the response with different predictors.
+
+```{r}
+M <- data.frame(matrix(ncol = 3, nrow = 0))
+
+for(i in catnm2){
+  df %>% select('Diabetes_012', all_of(i)) %>% 
+    table() %>% chisq.test() -> ch
+  M %>% rbind(c(paste('Diabetes -', i),
+                ch$statistic %>% round(3), 
+                ch$p.value)) -> M
+} %>% suppressWarnings()
+
+colnames(M) <- c('Pairs','Statistic','p-value')
+kable(M[1:9,])
+```
+
+As we can see from the table, all predictors are highly associated with the response.
+
+---
+  
+# Handling Imbalance in The Data:
+  
+Previously we have seen that our data is highly imbalanced and it can lead to biased models that perform poorly on the minority class.
+
+A good possible way of addressing this problem would be to use SMOTE and generate synthetic samples for the minority class which effectively balances the class distribution. However, using SMOTE or other over sampling methods to minority class is leading to a very long running time of code in Rstudio. Therefore, .font[we will proceed to make the data balanced by reducing size of the majority class using under-sampling method.]
+
+```{r}
+# Do this before model building:
+df_u <- ovun.sample(Diabetes_012~., data = df,
+                    p = 0.5, method = 'under')$data %>% 
+  as_tibble()
+```
+
+---
+  
+**Before under-sampling**, the distribution of "Diabetes_012" was as follows:
+
+```{r}
+# Before under sampling:
+df %>% count(Diabetes_012) %>%
+  mutate("percentage" = percent(n/sum(n))) %>% as.matrix %>% kable()
+```
+
+**After under-sampling**, there are now 70356 data points in the dataset where the distribution of "Diabetes_012" is given by:
+
+```{r}
+# After under sampling:
+df_u %>% count(Diabetes_012) %>% 
+  mutate("percentage" = percent(n/sum(n))) %>% as.matrix() %>% kable()
+```
+
+```{r}
+# Function for PRECISION & RECALL:
+stats <- function(C_train, C_test, model){      # C := Confusion Matrix and Statistics
+  t <- C_test$table
+  t1 <- C_train$table
+  
+  acc_train <- C_train$overall[[1]]
+  acc_test <- C_test$overall[[1]]
+  pre <- t[2,2]/(t[2,2]+t[2,1])
+  rec <- t[2,2]/(t[2,2]+t[1,2])
+  f1 <- 2*(rec*pre)/(rec+pre)
+  
+  matrix(c(acc_train,acc_test,pre,rec,f1), byrow = T,
+         dimnames = list(c('Train Accuracy','Test Accuracy','Precision',
+                           'Recall','F1-Score'),
+                         paste(model, ""))) -> M
+  return(list('TestConfusionMatrix' = t,
+              'TrainConfusionMatrix' = t1,
+              'Metrics' = M))
+}
+```
+#### Train Set and Test Set Splitting
+
+
+we now split this new data into train set and test set in a ratio of 3:1.
+
+The train set contains 49249 data points.
+The test set contains 21107 data points.
+```{r}
+## Train - Test SPLIT:
+n <- nrow(df_u); set.seed(42)
+rs <- sample(1:n, size = 0.75*n, replace = F)
+train_data <- df_u[rs,]
+test_data <- df_u[-rs,]
+```
+---
+  
+# Model Bulding :
+  
+**Fitting GLM** :
+  
+  For the Generalised Linear Models we have taken the canonical links "logit", "probit" and "cauchit". The AIC and Deviance for these models are tabled below
+
+```{r}
+link <- c('probit','logit','cauchit')
+M <- matrix(ncol = 2, nrow = 3,
+            dimnames = list(link, c("AIC","Deviance")))
+
+for(i in 1:3){
+  glm(Diabetes_012 ~ ., data = train_data,
+      family = binomial(link = link[i])) %>% 
+    summary() -> s
+  M[i,] <- c(s$aic, s$deviance)
+}
+M %>% kable()
+```
+
+We can see that among these three proposed models the model with "logit" link has the least AIC and Deviance.
+  
+  So, we are going to use .font[logistic regression] as our model and try to improve it.
+
+---
+  After fitting logistic model we get the following summary
+
+```{r}
+#### Fitting (INITIAL) :
+glm(Diabetes_012 ~ ., data = train_data,
+    family = binomial(link = 'logit')) %>% 
+  summary() -> s1
+s1$coefficients[1:15,] %>% kable()
+```
+
+---
+  
+Note that many of the predictors are not statistically significant. Therefore, we will rebuilt this model by omitting those. Also, among the predictors that are significant, many have too many levels. This leads to increased complexity in our model. So, we will reduce the number of levels for some of these significant predictors.
+
+```{r}
+insig_vars <- c('Fruits','Veggies','MentHlth','PhysHlth',
+                'AnyHealthcare','Education') # to be removed from the model
+train_data1 <- train_data %>% select(!all_of(insig_vars))
+test_data1 <- test_data %>% select(!all_of(insig_vars))
+
+# Re-formatting GenHlth:
+#u1 <- train_data %>% pull(GenHlth) %>% unique(); u1
+train_data1 %>% mutate(GenHlth = case_when(
+  GenHlth %in% 1:3 ~ "<= 3",
+  GenHlth %in% 4:5 ~ "> 3"
+)) -> train_data1
+
+test_data1 %>% mutate(GenHlth = case_when(
+  GenHlth %in% 1:3 ~ "<= 3",
+  GenHlth %in% 4:5 ~ "> 3"
+)) -> test_data1
+
+# Re-formatting Age:
+#u2 <- train_data %>% pull(Age) %>% unique(); u2
+train_data1 %>% mutate(Age = case_when(
+  Age %in% 1:4 ~ "< 5",
+  Age %in% 5:9 ~ "5-9",
+  Age %in% 10:13 ~ "> 9"
+)) -> train_data1
+
+test_data1 %>% mutate(Age = case_when(
+  Age %in% 1:4 ~ "< 5",
+  Age %in% 5:9 ~ "5-9",
+  Age %in% 10:13 ~ "> 9"
+)) -> test_data1
+
+# Re-formatting Income:
+#u3 <- train_data %>% pull(Income) %>% unique(); u3
+train_data1 %>% mutate(Income = case_when(
+  Income %in% 1:4 ~ "Low",
+  Income %in% 5:8 ~ "High"
+)) -> train_data1
+
+test_data1 %>% mutate(Income = case_when(
+  Income %in% 1:4 ~ "Low",
+  Income %in% 5:8 ~ "High"
+)) -> test_data1
+```
+
+The re-formatting of the columns are done as mentioned below:
+  
+  - **"GenHlth"** : levels '1', '2', '3' are replaced by '<= 3' and levels '4', '5' are replaced by '> 3'.
+
+- **"Age"** : levels '1', '2', '3', '4' are replaced by '< 5'. levels '5', '6', '7', '8', '9' are replaced by '5-9' and levels '10', '11', '12', '13' are replaced by '> 9'.
+
+- **"Income"** : levels '1', '2', '3', '4' are replaced by 'Low' and levels '5', '6', '7', '8' are replaced by 'High'.
+
+---
+  
+  We fit logistic model to the modified set and obtain the following summary.
+
+```{r}
+
+#### Fitting (FINAL) ::
+glm(Diabetes_012 ~ ., data = train_data1,
+    family = binomial(link = 'logit')) -> g
+
+g %>% summary() -> sl
+sl$coefficients[1:12,] %>% kable()
+# seems good!
+```
+
+---
+  All the predictors in the new dataset are highly significant in predicting response.
+
+Now,based on .red[accuracy] and .red[specificity*sensitivity] we get the following optimum threshold points:
+  
+```{r}
+  
+## Optimum cut-off selection:
+metric_func <- function(data, phat){  # function to store the 
+  cut_points <- seq(0.01,0.99,0.01)    # necessary metrics
+  
+  d <- data.frame(matrix(nrow = length(cut_points),
+                         ncol = 4, dimnames = list(
+                           paste(1:length(cut_points)),
+                           c('p_opt','Accuracy',
+                             'Sensitivity','Specificity')
+                         )))
+  
+  for(i in 1:length(cut_points)){
+    C <- confusionMatrix(
+      if_else(phat >= cut_points[i], 1, 0) %>% as.factor(),
+      data$Diabetes_012)
+    
+    d[i,] <- c(cut_points[i], C$overall[[1]],
+               C$byClass[[1]],C$byClass[[2]])
+  }
+  
+  d$sens_spec <- d[,3]*d[,4]
+  return(d)
+}
+
+phat_train <- g %>% predict.glm(type = 'response')
+
+m_train <- metric_func(train_data1,phat_train) 
+
+p1_opt <- m_train[which.max((m_train$Accuracy)),]$p_opt
+p2_opt <- m_train[which.max((m_train$sens_spec)),]$p_opt
+
+
+```
+
+Optimum threshold point (Accuracy) : 0.44
+
+Optimum threshold point (Specifity*Sensitivity) : 0.48
+
+[Note: The optimum thresolds are the points between 0 to 1 for which the corresponding metric is munimum.]
+---
+  
+The ROC curve (on train set) is shown here:
+
+```{r}
+### ROC curves:
+ROC_func <- function(m){
+  plot(1 - m$Specificity, m$Sensitivity, type = 'l',
+       main = 'ROC curve', 
+       ylab = 'Specificity (TPR)',
+       xlab = '1-Sensitivity (FPR)', lwd = 2, las = 1)
+  abline(a = 0, b = 1, h = 0:1, v = 0:1, lty = 2)
+}
+
+ROC_func(m_train)
+
+
+```
+
+---
+The values of the threshold points, previously chosen, are justified by the ROC curve.
+
+To obtain the confusion matrices for training and test sets we take the average of the above threshold point values as our threshold probability. The accuracy for training and test set are obtained as:
+
+```{r}
+# Considering the average of cut points
+
+p_avg <- mean(c(p1_opt, p2_opt))
+
+### On test data:
+phat_test <- predict.glm(g, newdata = test_data1,
+                         type = 'response')
+
+confusionMatrix(ifelse(phat_test >= p_avg, 1, 0) %>% 
+                  as.factor(), test_data1$Diabetes_012) -> C_tst
+confusionMatrix(ifelse(phat_train >= p_avg, 1, 0) %>% 
+                  as.factor(), train_data1$Diabetes_012) -> C_trn
+
+stats(C_trn, C_tst, "Logistic")$Metrics -> M_l
+M_l %>% kable()
+
+```
+
+.font[Therefore, the model seems to be good.]
+
+---
+  
+**Decision Tree :**
+  
+  We implement 5-fold cross-validation to avoid overfitting to the training set and consequently improve model generalization. Cross-validation also tunes the hyperparameters in the model so that the model complexity reduces.
+
+```{r}
+folds <- createMultiFolds(train_data$Diabetes_012, k = 5, times = 5)
+control <- trainControl(method = "repeatedcv", index = folds)
+classifier_cv <- train(Diabetes_012 ~ ., data = train_data, 
+                       method = "rpart", trControl = control)
+
+classifier_cv$finalModel -> dtree_f # final model
+```
+
+  
+#### The tree is visualized below:
+
+```{r}
+rpart.plot(dtree_f, extra = 4) # visualizing tree
+```
+
+---
+  
+In this model we can record the total amount that the RSS or Gini index has decreased due to splits over a given predictor. By this score we determine the important variables for splitting purpose.
+
+The variables are shown with their corresponding importance:
+
+```{r}
+imp <- vip(dtree_f)
+print(imp)
+```
+
+---
+  
+The metrics to evaluate the classifier are summarized below:
+
+```{r}
+
+diab_pred_trn <- predict(classifier_cv, newdata = train_data)
+diab_pred_tst <- predict(classifier_cv, newdata = test_data)
+confusionMatrix(test_data$Diabetes_012,diab_pred_tst) -> C_tst
+confusionMatrix(train_data$Diabetes_012,diab_pred_trn) -> C_trn
+stats(C_trn, C_tst, 'Decision Tree')$Metrics -> M_dt
+M_dt %>% kable()
+```
+
+---
+  
+**Random Forest :**
+  
+  We fit a Random Forest classifier to the data by taking number of trees to be 300 and that of variables which are randomly sampled as candidates at each split to be $\sqrt{21}$ = 4 (approximately).
+
+```{r}
+rf_initial <- randomForest(Diabetes_012 ~ ., data = train_data,
+                           ntree = 300, mtry=4) 
+```
+
+---
+  
+  The plot of average decreased Gini's measure for the predictors are shown below:
+
+```{r}
+varImpPlot(rf_initial)
+```
+
+---
+
+.red[Note that "BMI" is the most important variable while "CholCheck" is the least important.]
+
+---
+
+Let us now see how the overall error in the model behaves with respect to number of trees in the model:
+
+```{r}
+# Plot of errors:
+plot(rf_initial, lwd = 2, lty = 1)   
+grid(lty = 3, col = 'black')
+```
+
+---
+
+Observe that the overall error (shown in black in) almost stabilizes from the 150 trees onward.
+
+.font[Therefore, we again build a Random Forest classifier by taking number of trees to be 150.]
+
+```{r}
+rf <- randomForest(Diabetes_012 ~ ., data = train_data,
+                   ntree = 150) 
+
+```
+
+The metrics used to evaluate the model are shown below
+
+```{r}
+# Prediction:
+
+diab_pred_tst <- predict(rf, newdata = test_data,
+                     type = 'class')
+diab_pred_trn <- predict(rf, newdata = train_data,
+                     type = 'class')
+
+
+# Model metrics:
+confusionMatrix(test_data$Diabetes_012, diab_pred_tst) -> C_tst
+confusionMatrix(train_data$Diabetes_012, diab_pred_trn) -> C_trn
+stats(C_trn, C_tst, 'Random Forest')$Metrics -> M_rf
+M_rf %>% kable() # Line 200
+
+```
+
+---
+
+**KNN :**
+
+At first we determine the optimum value of the number of neighbors (i.e. k) by plotting the mean error rate for different choices of k.
+
+```{r}
+# Choosing optimal value of "k" :
+error <- array(0)
+k <- seq(1, 49, by = 2)
+
+for(i in 1:length(k)){
+  knn_model <- knn(train_data[,-1], test_data[,-1], 
+                   cl = train_data$Diabetes_012, k = k[i])
+  error[i] <- mean(test_data$Diabetes_012 != knn_model)
+}
+
+# Error plot:
+data.frame('k' = k, 'ErrorRate' = error) %>% 
+  ggplot(aes(x = k, y = ErrorRate)) + 
+  geom_line(colour = 'red') + geom_point() +
+  scale_y_continuous(labels = percent, n.breaks = 10) +
+  scale_x_continuous(n.breaks = length(error)) +
+  theme_minimal()
+
+k_opt <- 35
+
+```
+
+---
+
+.font[From the graph we observe that the mean error rate is minimum for k = 35. Hence, 35 is the optimum choice for k.]
+
+After fitting the model we get the following metrics for evaluating our model:
+
+```{r}
+# Final model:
+knn_model <- knn(train_data[,-1], test_data[,-1], 
+                 cl = train_data$Diabetes_012, k = k_opt)
+
+
+confusionMatrix(knn_model,as.factor(test_data$Diabetes_012)) -> C
+stats1 <- function(C, model){      # C := Confusion Matrix and Statistics
+  t <- C$table
+  
+  acc<- C$overall[[1]]
+  pre <- t[2,2]/(t[2,2]+t[2,1])
+  rec <- t[2,2]/(t[2,2]+t[1,2])
+  f1 <- 2*(rec*pre)/(rec+pre)
+  
+  matrix(c(acc,pre,rec,f1), byrow = T,
+         dimnames = list(c('Accuracy','Precision',
+                           'Recall','F1-Score'),
+                         paste(model, ""))) -> M
+  return(list('TestConfusionMatrix' = t,
+              'Metrics' = M))
+}
+
+stats1(C, "KNN")$Metrics -> M_knn
+M_knn %>% kable()
+```
+
+---
+# MODEL SELECTION
+
+To compare the different models, the graph of their respective metrics are shown here
+
+```{r,fig.width=10,fig.height=6,fig.align='center'}
+acc <- c(M_l[2,], M_dt[2,], M_rf[2,], M_knn[1,])
+preci <- c(M_l[3,], M_dt[3,], M_rf[3,], M_knn[2,])
+rec <- c(M_l[4,], M_dt[4,], M_rf[4,], M_knn[3,])
+model <- c("Logistic", "Decision Tree", "Random Forest", "KNN")
+df_metrics <- data.frame(acc,preci,rec,model)
+colnames(df_metrics) <- c("Accuracy", "Precision", "Recall","Model")
+df_metrics$Model <- 
+  factor(df_metrics$Model, levels = model)
+
+plot_list <- list()
+
+for (i in colnames(df_metrics)[-4]) {
+  ggplot(data = df_metrics, aes(x = Model, y = .data[[i]], fill = Model)) +
+    geom_bar(stat = "identity", width = 0.2) +
+    labs(title = paste(i, "of Different Models"),
+         x = "Model", y = i) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) -> p
+  
+  plot_list[[i]] <- p
+}
+grid.arrange(grobs = plot_list, ncol = 3)
+
+```
+
+---
+# CONCLUSION
+
+
+The plot shows that the Random Forest classifier has best accuracy and precision out of these four models. Whereas, the recall is highest for the Logistic model.
+
+.red[Comparing all aspects of models and thoroughly evaluating them, we choose .font[Random Forest] as the ultimate winner !!!]
+---
+# SUMMARY
+
+- .font["HighBPI", "HighChol", "BMI", "Smoker", "Stroke" positively affects ones diabetes status. That means if a person has high BPI, high BMI, high Cholestrol or if he is a smoker then he is likely to be diagnosed by Diabetes.]
+
+- .font[Physical Activity plays a valuable role here. Low physical activity can lead to diabetes.]
+
+- .font[Age, Sex or Income do not contribute much towards diabetes diagnosis.]
